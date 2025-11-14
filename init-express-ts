@@ -1,0 +1,193 @@
+#!/bin/bash
+
+# --- 1. Argument Handling and Configuration ---
+
+# Check if a project name argument was provided
+if [ -z "$1" ]; then
+    echo "❌ Error: Please provide a project name."
+    echo "Usage: ./setup-express-ts-full.sh <project-name>"
+    exit 1
+fi
+
+PROJECT_NAME="$1"
+SERVER_FILE="server.ts"
+PORT=3000
+
+echo "🚀 Starting Express.js + TypeScript + Unit Testing setup for project: $PROJECT_NAME"
+
+# --- 2. Project Initialization and Dependency Check ---
+
+# Check if the directory already exists
+if [ -d "$PROJECT_NAME" ]; then
+    echo "⚠️ Directory $PROJECT_NAME already exists. Exiting."
+    exit 1
+fi
+
+mkdir $PROJECT_NAME
+cd $PROJECT_NAME
+echo "Created and navigated to project directory: $PROJECT_NAME"
+
+# Initialize npm project
+npm init -y > /dev/null
+echo "Initialized package.json."
+
+# --- 3. Install Dependencies ---
+
+echo "📦 Installing core and testing dependencies..."
+
+# Install Express
+npm install express > /dev/null
+
+# Install Dev Dependencies (TS, ts-node, nodemon, Jest, Supertest, etc.)
+npm install --save-dev \
+    typescript @types/node @types/express ts-node nodemon \
+    jest supertest @types/jest @types/supertest ts-jest > /dev/null
+
+echo "Installed all dependencies."
+
+# --- 4. Configure TypeScript (tsconfig.json) ---
+
+echo "⚙️ Creating tsconfig.json..."
+cat <<EOF > tsconfig.json
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["__tests__", "node_modules"]
+}
+EOF
+
+# --- 5. Configure Nodemon (nodemon.json) and Package Scripts ---
+
+echo "💻 Configuring package scripts and nodemon..."
+
+# Create nodemon.json
+cat <<EOF > nodemon.json
+{
+  "watch": ["src"],
+  "ext": "ts",
+  "exec": "ts-node ./src/$SERVER_FILE"
+}
+EOF
+
+# --- 6. Configure package.json Surgically ---
+
+echo "🔪 Surgically updating package.json scripts and Jest config..."
+
+# A. Update the 'scripts' object completely
+npx json -I -f package.json -e "this.scripts = {
+    'dev': 'nodemon',
+    'build': 'tsc',
+    'start': 'node dist/server.js',
+    'test': 'jest'
+}"
+
+# B. Insert the complex 'jest' configuration object
+npx json -I -f package.json -e "this.jest = {
+    'preset': 'ts-jest',
+    'testEnvironment': 'node',
+    'moduleFileExtensions': ['ts', 'js', 'json', 'node'],
+    'testMatch': ['**/__tests__/**/*.ts'],
+    'transform': {
+      '^.+\\.ts$': 'ts-jest'
+    }
+}"
+
+# --- 7. Create TypeScript Server and Testing Files ---
+
+echo "📝 Creating source and test files..."
+
+mkdir __tests__
+mkdir public
+
+mkdir src
+mkdir src/config
+mkdir src/controllers
+mkdir src/middlewares
+mkdir src/models
+mkdir src/routes
+mkdir src/services
+mkdir src/utils
+
+# Create src/server.ts (Express App)
+cat <<EOF > src/$SERVER_FILE
+import express, { Request, Response } from 'express';
+
+// Separate app definition from server start for easier testing
+const app = express();
+const PORT = process.env.PORT || $PORT;
+
+// Middleware
+app.use(express.json());
+
+// Main App Route
+app.get('/', (req: Request, res: Response) => {
+  res.status(200).json({ message: 'Hello, TypeScript Express Server!' });
+});
+
+// Start the server only if the file is run directly (not imported for testing)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(\`⚡️[server]: Server is running at http://localhost:\${PORT}\`);
+  });
+}
+
+// Export the app instance for testing
+export default app;
+EOF
+
+# Create __tests__/server.test.ts (Unit Test File)
+cat <<EOF > __tests__/server.test.ts
+import request from 'supertest';
+import app from '../src/server'; // Import the exported Express app
+
+describe('GET /', () => {
+  it('should return 200 and a welcome message', async () => {
+    // Use Supertest to make a request to the app instance
+    const response = await request(app).get('/');
+    
+    // Assertions
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toEqual({ message: 'Hello, TypeScript Express Server!' });
+  });
+});
+EOF
+
+# --- Generate License and GIT Commit ---
+git init
+npx -y license $(npm config get init-license) -o "$(npm config get init-author-name)"
+npx gitignore node
+git add -A
+git commit -m "Initial commit"
+
+# --- Final Summary ---
+
+echo ""
+echo "✅ Setup complete! Your project is ready in the '$PROJECT_NAME' directory."
+echo ""
+echo "Project Structure:"
+echo "├── __tests__/"
+echo "├── public/"
+echo "└── src/"
+echo "    ├── config/"
+echo "    ├── controllers/"
+echo "    ├── middlewares/"
+echo "    ├── models/"
+echo "    ├── routes/"
+echo "    ├── services/"
+echo "    ├── utils/"
+echo "    └── server.ts (and others...)"
+echo ""
+echo "Project includes: Express, TypeScript, Nodemon, Jest, and Supertest."
+echo "---"
+echo "To start development:   cd $PROJECT_NAME && npm run dev"
+echo "To run unit tests:      cd $PROJECT_NAME && npm test"
+echo ""

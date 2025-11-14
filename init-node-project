@@ -1,0 +1,22 @@
+#!/bin/bash
+
+VALIDATOR_SCRIPT="validate_empty"
+# Execute empty dir validation script and store result
+"$VALIDATOR_SCRIPT" "."
+VALIDATION_STATUS=$?
+
+# Check if the exit code is NOT equal to 0 (i.e., failure)
+if [ "$VALIDATION_STATUS" -ne 0 ]; then
+    echo "ERROR: The previous command failed (Exit Code: $VALIDATION_STATUS)."
+    echo "Halting the script."
+    exit 1
+fi
+
+
+git init
+npx -y license $(npm config get init-license) -o "$(npm config get init-author-name)"
+npx gitignore node
+npm init -y
+touch index.js
+git add -A
+git commit -m "Initial commit"
