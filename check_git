@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Loop through all child dirs
+for dir in */; do
+    echo
+    printf -- "%.s-" {1..25}
+    echo
+    echo "${dir%/}"
+    printf -- "%.s-" {1..25}
+    echo
+
+    cd "$dir"
+    git status
+    cd ..
+done
+
+echo
