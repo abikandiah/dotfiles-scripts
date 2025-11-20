@@ -18,10 +18,13 @@ if [ -z "$TARGET_DIR" ]; then
 fi
 
 # 2. Check if the path exists and is a directory
-if [ ! -d "$TARGET_DIR" ]; then
-    echo "Error: Directory '$TARGET_DIR' does not exist or is not a directory."
-    exit 1
+if [ -e "$TARGET_DIR" ]; then
+    if [ ! -d "$TARGET_DIR" ]; then
+        echo "Error: Directory '$TARGET_DIR' does not exist or is not a directory."
+        exit 1
+    fi
 fi
+
 
 # 3. Use 'find' to check for any contents, including hidden files
 # The '-mindepth 1' ensures we only look at content *inside* the directory,

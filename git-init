@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# --- Configuration ---
+echo "========================================"
+echo "| 🚀 Universal Git Project Initializer |"
+echo "========================================"
+
+# Check if dir is empty
+echo
+echo "1. Preparing configuration..."
+
+validate_empty ".git"
+VALIDATION_STATUS=$?
+
+if [ "$VALIDATION_STATUS" -ne 0 ]; then
+    echo "❌ ERROR: The previous command failed (Exit Code: $VALIDATION_STATUS)."
+    exit 1
+fi
+
+# 1. Get User Input for Customization
+read -p "Enter the primary language/template for .gitignore (e.g., go, node, python): " GITIGNORE_LANG
+read -p "Enter the Copyright Holder Name (e.g., Your Name or Company) [Default: $(npm config get init-author-name)]: " LICENSE_HOLDER_INPUT
+
+# Set fallback (if input is empty)
+# This uses the ${VAR:-default} expansion: if LICENSE_HOLDER_INPUT is empty,
+DEFAULT_HOLDER=$(npm config get init-author-name)
+LICENSE_HOLDER=${LICENSE_HOLDER_INPUT:-$DEFAULT_HOLDER}
+
+echo "Using license holder: ${LICENSE_HOLDER}"
+
+# --- Initialization Steps ---
+
+# 2. Initialize Git Repository
+echo
+echo "2. Initializing Git repository..."
+git init
+if [ $? -ne 0 ]; then
+    echo "❌ ERROR: Git initialization failed. Is Git installed?"
+    exit 1
+fi
+
+# 3. Generate .gitignore using npx gitignore
+echo
+echo "3. Generating .gitignore for ${GITIGNORE_LANG}..."
+npx gitignore "${GITIGNORE_LANG}" > .gitignore
+if [ $? -ne 0 ]; then
+    echo "❌ ERROR: npx command failed. Is Node.js/npx installed, and is '${GITIGNORE_LANG}' a valid template?"
+    exit 1
+fi
+
+# 4. Generate MIT LICENSE
+echo
+echo "4. Generating MIT LICENSE file..."
+npx -y license $(npm config get init-license) --name "$LICENSE_HOLDER"
+
+# 5. First Git Commit
+echo
+echo "5. Performing initial commit..."
+git add .
+git commit -m "feat: Initial project setup (license, gitignore)"
+
+echo
+echo "===================================="
+echo "| ✅ Initialization Complete! |"
+echo "===================================="

@@ -162,11 +162,7 @@ describe('GET /', () => {
 EOF
 
 # --- Generate License and GIT Commit ---
-git init
-npx -y license $(npm config get init-license) -o "$(npm config get init-author-name)"
-npx gitignore node
-git add -A
-git commit -m "Initial commit"
+git-init
 
 # --- Final Summary ---
 
